@@ -26,7 +26,8 @@
 #define DIM           36
 #define N             6
 
-const int rows[][7] = {
+/* Precomputed Row Movement. -1 for end of board */
+constexpr int rows[][7] = {
     { 4, 5, 6, 7, 8, 9,-1 }, { 4, 5, 6, 7, 8, 9,-1 }, { 4, 5, 6, 7, 8, 9,-1 },
     { 4, 5, 6, 7, 8, 9,-1 }, { 4, 5, 6, 7, 8, 9,-1 }, { 4, 5, 6, 7, 8, 9,-1 },
     {10,11,12,13,14,15,-1 }, {10,11,12,13,14,15,-1 }, {10,11,12,13,14,15,-1 },
@@ -40,7 +41,9 @@ const int rows[][7] = {
     {30,31,32,33,34,35,-1 }, {30,31,32,33,34,35,-1 }, {30,31,32,33,34,35,-1 },
     {30,31,32,33,34,35,-1 }, {30,31,32,33,34,35,-1 }, {30,31,32,33,34,35,-1 }
 };
-const int cols[][7] = {
+
+/* Precomputed Column Movement. -1 for end of board */
+constexpr int cols[][7] = {
     { 4,10,16,20,24,30,-1 }, { 5,11,17,21,25,31,-1 }, { 6,12, 0, 2,26,32,-1 },
     { 7,13, 1, 3,27,33,-1 }, { 8,14,18,22,28,34,-1 }, { 9,15,19,23,29,35,-1 },
     { 4,10,16,20,24,30,-1 }, { 5,11,17,21,25,31,-1 }, { 6,12, 0, 2,26,32,-1 },
@@ -54,7 +57,9 @@ const int cols[][7] = {
     { 4,10,16,20,24,30,-1 }, { 5,11,17,21,25,31,-1 }, { 6,12, 0, 2,26,32,-1 },
     { 7,13, 1, 3,27,33,-1 }, { 8,14,18,22,28,34,-1 }, { 9,15,19,23,29,35,-1 }
 };
-const int dia1[][7] = {
+
+/* Precomputed Upper Left Diagonal Movement. -1 for end of board */
+constexpr int dia1[][7] = {
     { 4,11, 0, 3,28,35,-1 }, { 5,12, 1,22,29,-1,-1 }, { 6,13,18,23,-1,-1,-1 },
     { 7,14,19,-1,-1,-1,-1 }, { 8,15,-1,-1,-1,-1,-1 }, { 9,-1,-1,-1,-1,-1,-1 },
     {10,17, 2,27,34,-1,-1 }, { 4,11, 0, 3,28,35,-1 }, { 5,12, 1,22,29,-1,-1 },
@@ -68,7 +73,9 @@ const int dia1[][7] = {
     {30,-1,-1,-1,-1,-1,-1 }, {24,31,-1,-1,-1,-1,-1 }, {20,25,32,-1,-1,-1,-1 },
     {16,21,26,33,-1,-1,-1 }, {10,17, 2,27,34,-1,-1 }, { 4,11, 0, 3,28,35,-1 }
 };
-const int dia2[][7] = {
+
+/* Precomputed Upper Right Diagonal Movement. -1 for end of board */
+constexpr int dia2[][7] = {
     { 4,-1,-1,-1,-1,-1,-1 }, { 5,10,-1,-1,-1,-1,-1 }, { 6,11,16,-1,-1,-1,-1 },
     { 7,12,17,20,-1,-1,-1 }, { 8,13, 0,21,24,-1,-1 }, { 9,14, 1, 2,25,30,-1 },
     { 5,10,-1,-1,-1,-1,-1 }, { 6,11,16,-1,-1,-1,-1 }, { 7,12,17,20,-1,-1,-1 },
@@ -84,18 +91,22 @@ const int dia2[][7] = {
 };
 
 // moves on the principal variation
-static int PV[] = {
+static constexpr int PV[] = {
     12, 21, 26, 13, 22, 18,  7,  6,  5, 27, 33, 23, 17, 11, 19, 15,
     14, 31, 20, 32, 30, 10, 25, 24, 34, 28, 16,  4, 29, 35, 36,  8,
     9, -1
 };
 
 class state_t {
+    /* 4 Center Pieces (Only lower bits) (1 for black) */
     unsigned char t_; 
+    /* Bit representation of free positions of board without center (0 for free) */
     unsigned free_;
+    /* Bit representation of the color of the positions of board without center (1 for black) */
     unsigned pos_;
 
   public:
+    /* 4 Center Pieces (Only lower bits) (1 for black) */
     explicit state_t(unsigned char t = 6) : t_(t), free_(0), pos_(0) { }
 
     unsigned char t() const { return t_; }
@@ -103,6 +114,7 @@ class state_t {
     unsigned pos() const { return pos_; }
     size_t hash() const { return free_ ^ pos_ ^ t_; }
 
+    /* If a position belongs to a color. True for black, False for White */
     bool is_color(bool color, int pos) const {
         if( color )
             return pos < 4 ? t_ & (1 << pos) : pos_ & (1 << (pos - 4));
@@ -117,7 +129,9 @@ class state_t {
     int value() const;
     bool terminal() const;
     bool outflank(bool color, int pos) const;
+    /* Check a movement for Black, if pos == 36 then it passes */
     bool is_black_move(int pos) const { return (pos == DIM) || outflank(true, pos); }
+    /* Check a movement for White, if pos == 36 then it passes */
     bool is_white_move(int pos) const { return (pos == DIM) || outflank(false, pos); }
 
     void set_color(bool color, int pos);
@@ -146,6 +160,14 @@ class state_t {
         pos_ = state.pos_;
         return *this;
     }
+
+    state_t(const state_t &state) = default;
+
+    state_t(state_t &&state) noexcept = default;
+
+    state_t& operator=(state_t &&state) noexcept = default;
+    
+    ~state_t() = default;
 
     void print(std::ostream &os, int depth = 0) const;
     void print_bits(std::ostream &os) const;
@@ -198,8 +220,29 @@ inline bool state_t::outflank(bool color, int pos) const {
         if( (p < x - 1) && (p >= cols[pos - 4]) && !is_free(*p) ) return true;
     }
 
-    // [CHECK OVER DIAGONALS REMOVED]
-    assert(0);
+    // Check Diag1
+    x = dia1[pos - 4];
+    while( *x != pos ) ++x;
+    if( *(x+1) != -1 ) {
+        for( p = x + 1; (*p != -1) && !is_free(*p) && (color ^ is_black(*p)); ++p );
+        if( (p > x + 1) && (*p != -1) && !is_free(*p) ) return true;
+    }
+    if( x != dia1[pos - 4] ) {
+        for( p = x - 1; (p >= dia1[pos - 4]) && !is_free(*p) && (color ^ is_black(*p)); --p );
+        if( (p < x - 1) && (p >= dia1[pos - 4]) && !is_free(*p) ) return true;
+    }
+
+    // Check Diag2
+    x = dia2[pos - 4];
+    while( *x != pos ) ++x;
+    if( *(x+1) != -1 ) {
+        for( p = x + 1; (*p != -1) && !is_free(*p) && (color ^ is_black(*p)); ++p );
+        if( (p > x + 1) && (*p != -1) && !is_free(*p) ) return true;
+    }
+    if( x != dia2[pos - 4] ) {
+        for( p = x - 1; (p >= dia2[pos - 4]) && !is_free(*p) && (color ^ is_black(*p)); --p );
+        if( (p < x - 1) && (p >= dia2[pos - 4]) && !is_free(*p) ) return true;
+    }
 
     return false;
 }
@@ -263,7 +306,37 @@ inline state_t state_t::move(bool color, int pos) const {
         }
     }
 
-    // [PROCESS OF DIAGONALS REMOVED]
+    // Process diag1
+    x = dia1[pos - 4];
+    while( *x != pos ) ++x;
+    if( *(x+1) != -1 ) {
+        for( p = x + 1; (*p != -1) && !is_free(*p) && (color ^ is_black(*p)); ++p );
+        if( (p > x + 1) && (*p != -1) && !is_free(*p) ) {
+            for( const int *q = x + 1; q < p; ++q ) s.set_color(color, *q);
+        }
+    }
+    if( x != dia1[pos - 4] ) {
+        for( p = x - 1; (p >= dia1[pos - 4]) && !is_free(*p) && (color ^ is_black(*p)); --p );
+        if( (p < x - 1) && (p >= dia1[pos - 4]) && !is_free(*p) ) {
+            for( const int *q = x - 1; q > p; --q ) s.set_color(color, *q);
+        }
+    }
+
+    // Process diag2
+    x = dia2[pos - 4];
+    while( *x != pos ) ++x;
+    if( *(x+1) != -1 ) {
+        for( p = x + 1; (*p != -1) && !is_free(*p) && (color ^ is_black(*p)); ++p );
+        if( (p > x + 1) && (*p != -1) && !is_free(*p) ) {
+            for( const int *q = x + 1; q < p; ++q ) s.set_color(color, *q);
+        }
+    }
+    if( x != dia2[pos - 4] ) {
+        for( p = x - 1; (p >= dia2[pos - 4]) && !is_free(*p) && (color ^ is_black(*p)); --p );
+        if( (p < x - 1) && (p >= dia2[pos - 4]) && !is_free(*p) ) {
+            for( const int *q = x - 1; q > p; --q ) s.set_color(color, *q);
+        }
+    }
 
     return s;
 }

@@ -6,6 +6,7 @@
 
 #include "othello_cut.h" // won't work correctly until .h is fixed!
 #include "utils.h"
+#include <algorithm>
 #include <iostream>
 #include <limits>
 
@@ -38,7 +39,24 @@ hash_table_t TTable[2];
 // int maxmin(state_t state, int depth, bool use_tt);
 // int minmax(state_t state, int depth, bool use_tt = false);
 // int maxmin(state_t state, int depth, bool use_tt = false);
-int negamax(state_t state, int depth, int color, bool use_tt = false);
+int negamax(state_t state, int depth, int color, bool use_tt = false) {
+  if (depth <= 0 || state.terminal()) {
+    return color * state.value();
+  }
+  bool isBlack = color == 1;
+  int alpha = std::numeric_limits<int>::min();
+  for (int pos = 4; pos <= DIM; ++pos) {
+    if ((pos == DIM) || (isBlack && state.is_black_move(pos)) ||
+        (!isBlack && state.is_white_move(pos))) {
+      ++generated;
+      ++expanded;
+      state_t child = state.move(isBlack, pos);
+      alpha = std::max(
+          alpha, -negamax(child, depth - 1, -color, use_tt));
+    }
+  }
+  return alpha;
+}
 int negamax(state_t state, int depth, int alpha, int beta, int color,
             bool use_tt = false);
 int scout(state_t state, int depth, int color, bool use_tt = false);
@@ -101,7 +119,7 @@ int main(int argc, const char **argv) {
 
     try {
       if (algorithm == 1) {
-        // value = negamax(pv[i], 0, color, use_tt);
+        value = negamax(pv[i], npv + 1 - i, color, use_tt);
       } else if (algorithm == 2) {
         // value = negamax(pv[i], 0, -200, 200, color, use_tt);
       } else if (algorithm == 3) {

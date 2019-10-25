@@ -47,26 +47,128 @@ int negamax(state_t state, int depth, int color, bool use_tt = false) {
   bool pass = true;
   int alpha = std::numeric_limits<int>::min();
   for (int pos = 4; pos < DIM; ++pos) {
-    if ((pos == DIM) || (isBlack && state.is_black_move(pos)) ||
-        (!isBlack && state.is_white_move(pos))) {
+    if ((isBlack && state.is_black_move(pos)) || (!isBlack && state.is_white_move(pos))) {
       pass = false;
       ++generated;
       ++expanded;
-      alpha = std::max(
-          alpha, -negamax(state.move(isBlack, pos), depth - 1, -color, use_tt));
+      alpha = std::max(alpha, -negamax(state.move(isBlack, pos), depth - 1, -color, use_tt));
     }
   }
 
   if (pass) {
-    alpha = std::max(
-          alpha, -negamax(state.move(isBlack, DIM), depth - 1, -color, use_tt));
+    ++generated;
+    ++expanded;
+    alpha = std::max(alpha, -negamax(state.move(isBlack, DIM), depth - 1, -color, use_tt));
   }
 
   return alpha;
 }
-int negamax(state_t state, int depth, int alpha, int beta, int color,
-            bool use_tt = false);
-int scout(state_t state, int depth, int color, bool use_tt = false);
+int negamax(state_t state, int depth, int alpha, int beta, int color, bool use_tt = false) {
+  if (depth <= 0 || state.terminal()) {
+    return color * state.value();
+  }
+  bool isBlack = color == 1;
+  bool pass = true;
+  int score = std::numeric_limits<int>::min();
+  int val;
+  for (int pos = 4; pos < DIM; ++pos) {
+    if ((isBlack && state.is_black_move(pos)) || (!isBlack && state.is_white_move(pos))) {
+      val = -negamax(state.move(isBlack, pos), depth - 1, -beta, -alpha, -color, use_tt);
+      score = std::max(score, val);
+      alpha = std::max(alpha, val);
+      pass = false;
+      ++generated;
+      ++expanded;
+      if (alpha >= beta) break;
+    }
+  }
+
+  if (pass) {
+    ++generated;
+    ++expanded;
+    score = std::max(score, -negamax(state.move(isBlack, DIM), depth - 1, -beta, -alpha, -color, use_tt));
+  }
+
+  return score;
+}
+
+bool test(state_t state, int depth, int score, bool condition, int color) {
+  if (depth <= 0 || state.terminal()) {
+    if (condition){
+      return state.value() > score ? true : false;
+    } else {
+      return state.value() >= score ? true : false;
+    }
+  }
+  
+  bool isBlack = color == 1;
+  bool pass = true;
+
+  for (int pos = 4; pos < DIM; ++pos) {
+    if ((isBlack && state.is_black_move(pos)) || (!isBlack && state.is_white_move(pos))) {
+      pass = false;
+      if (isBlack && test(state.move(isBlack, pos), depth - 1, score, condition, -color)) return true;
+      if (!isBlack && !test(state.move(isBlack, pos), depth - 1, score, condition, -color)) return false;
+    }
+  }
+
+  if (pass) {
+    if (isBlack && test(state.move(isBlack, DIM), depth - 1, score, condition, -color)) return true;
+    if (!isBlack && !test(state.move(isBlack, DIM), depth - 1, score, condition, -color)) return false;
+  }
+
+  return !isBlack;
+}
+
+int scout(state_t state, int depth, int color, bool use_tt = false) {
+  if (depth <= 0 || state.terminal()) {
+    return state.value();
+  }
+  bool isBlack = color == 1;
+  bool pass = true;
+  bool firstChild = true;
+  int score = 0;
+  for (int pos = 4; pos < DIM; ++pos) {
+    if ((isBlack && state.is_black_move(pos)) || (!isBlack && state.is_white_move(pos))) {
+      if (firstChild) {
+        firstChild = false;
+        ++expanded;
+        score = scout(state.move(isBlack, pos), depth - 1, -color, use_tt);
+      } else {
+        if (isBlack && test(state.move(isBlack, pos), depth - 1, score, true, -color)) {
+          ++expanded;
+          score = scout(state.move(isBlack, pos), depth - 1, -color, use_tt);
+        }
+        if (!isBlack && !test(state.move(isBlack, pos), depth - 1, score, false, -color)) {
+          ++expanded;
+          score = scout(state.move(isBlack, pos), depth - 1, -color, use_tt);
+        }
+      }
+      pass = false;
+      ++generated;
+    }
+  }
+
+  if (pass) {
+    if (firstChild) {
+      firstChild = false;
+      ++expanded;
+      score = scout(state.move(isBlack, DIM), depth - 1, -color, use_tt);
+    } else {
+      if (isBlack && test(state.move(isBlack, DIM), depth - 1, score, true, -color)) {
+        ++expanded;
+        score = scout(state.move(isBlack, DIM), depth - 1, -color, use_tt);
+      }
+      if (!isBlack && !test(state.move(isBlack, DIM), depth - 1, score, false, -color)) {
+        ++expanded;
+        score = scout(state.move(isBlack, DIM), depth - 1, -color, use_tt);
+      }
+    }
+    ++generated;
+    }
+  return score;
+}
+
 int negascout(state_t state, int depth, int alpha, int beta, int color,
               bool use_tt = false);
 
@@ -126,11 +228,11 @@ int main(int argc, const char **argv) {
 
     try {
       if (algorithm == 1) {
-        value = negamax(pv[i], npv + 1 - i, color, use_tt);
+        value = negamax(pv[i], i + 1, color, use_tt);
       } else if (algorithm == 2) {
-        // value = negamax(pv[i], 0, -200, 200, color, use_tt);
+        value = negamax(pv[i], i + 1, -200, 200, color, use_tt);
       } else if (algorithm == 3) {
-        // value = scout(pv[i], 0, color, use_tt);
+        value = scout(pv[i], i + 1, color, use_tt);
       } else if (algorithm == 4) {
         // value = negascout(pv[i], 0, -200, 200, color, use_tt);
       }

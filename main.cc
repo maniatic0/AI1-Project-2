@@ -44,17 +44,24 @@ int negamax(state_t state, int depth, int color, bool use_tt = false) {
     return color * state.value();
   }
   bool isBlack = color == 1;
+  bool pass = true;
   int alpha = std::numeric_limits<int>::min();
-  for (int pos = 4; pos <= DIM; ++pos) {
+  for (int pos = 4; pos < DIM; ++pos) {
     if ((pos == DIM) || (isBlack && state.is_black_move(pos)) ||
         (!isBlack && state.is_white_move(pos))) {
+      pass = false;
       ++generated;
       ++expanded;
-      state_t child = state.move(isBlack, pos);
       alpha = std::max(
-          alpha, -negamax(child, depth - 1, -color, use_tt));
+          alpha, -negamax(state.move(isBlack, pos), depth - 1, -color, use_tt));
     }
   }
+
+  if (pass) {
+    alpha = std::max(
+          alpha, -negamax(state.move(isBlack, DIM), depth - 1, -color, use_tt));
+  }
+
   return alpha;
 }
 int negamax(state_t state, int depth, int alpha, int beta, int color,

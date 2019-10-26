@@ -126,7 +126,7 @@ int scout(state_t state, int depth, int color, bool use_tt = false) {
   if (depth <= 0 || state.terminal()) {
     return state.value();
   }
-  bool isBlack = color == 1;
+  const bool isBlack = color == 1;
   bool pass = true;
   bool firstChild = true;
   int score = 0;
@@ -223,7 +223,7 @@ int main(int argc, const char **argv) {
       } else if (algorithm == 2) {
         value = negamax(pv[i], i, -200, 200, color, use_tt);
       } else if (algorithm == 3) {
-        value = scout(pv[i], i, color, use_tt);
+        value = color * scout(pv[i], i, color, use_tt);
       } else if (algorithm == 4) {
         // value = negascout(pv[i], 0, -200, 200, color, use_tt);
       }

@@ -161,7 +161,48 @@ int scout(state_t state, int depth, int color, bool use_tt = false) {
 }
 
 int negascout(state_t state, int depth, int alpha, int beta, int color,
-              bool use_tt = false);
+              bool use_tt = false) {
+  if (depth <= 0 || state.terminal()) {
+    return color * state.value();
+  }
+
+  const bool isBlack = color == 1;
+  bool pass = true;
+  bool firstChild = true;
+  int score = 0;
+  for (int pos = 4; pos < DIM; ++pos) {
+    if ((isBlack && state.is_black_move(pos)) || (!isBlack && state.is_white_move(pos))) {
+      pass = false;
+      ++generated;
+      state_t child = state.move(isBlack, pos);
+      if (firstChild) {
+        firstChild = false;
+        ++expanded;
+        score = -negascout(child, depth - 1, -beta, -alpha, -color, use_tt);
+      } else {
+        ++expanded;
+        score = -negascout(child, depth - 1, -alpha - 1, -alpha, -color, use_tt);
+        if (alpha < score && score < beta) {
+          score = -negascout(child, depth - 1, -beta, -score, -color, use_tt);
+        }
+      }
+      alpha = std::max(alpha, score);
+      if (alpha >= beta) {
+        break;
+      }
+    }
+  }
+
+  if (pass) {
+    state_t child = state.move(isBlack, DIM);
+    score = -negascout(child, depth - 1, -beta, -alpha, -color, use_tt);
+    alpha = std::max(alpha, score);
+    ++expanded;
+    ++generated;
+  }
+
+  return alpha;
+}
 
 int main(int argc, const char **argv) {
   state_t pv[128];
@@ -225,7 +266,7 @@ int main(int argc, const char **argv) {
       } else if (algorithm == 3) {
         value = color * scout(pv[i], i, color, use_tt);
       } else if (algorithm == 4) {
-        // value = negascout(pv[i], 0, -200, 200, color, use_tt);
+        value = negascout(pv[i], i, -200, 200, color, use_tt);
       }
     } catch (const bad_alloc &e) {
       cout << "size TT[0]: size=" << TTable[0].size()

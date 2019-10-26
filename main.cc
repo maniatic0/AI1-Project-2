@@ -86,7 +86,9 @@ int negamax(state_t state, int depth, int alpha, int beta, int color, bool use_t
   if (pass) {
     ++generated;
     ++expanded;
-    score = std::max(score, -negamax(state.move(isBlack, DIM), depth - 1, -beta, -alpha, -color, use_tt));
+    val = -negamax(state.move(isBlack, DIM), depth - 1, -beta, -alpha, -color, use_tt);
+    score = std::max(score, val);
+    alpha = std::max(alpha, val);
   }
 
   return score;
@@ -260,13 +262,13 @@ int main(int argc, const char **argv) {
 
     try {
       if (algorithm == 1) {
-        value = negamax(pv[i], i, color, use_tt);
+        value = negamax(pv[i], i + 1, color, use_tt);
       } else if (algorithm == 2) {
-        value = negamax(pv[i], i, -200, 200, color, use_tt);
+        value = negamax(pv[i], i + 1, -200, 200, color, use_tt);
       } else if (algorithm == 3) {
-        value = color * scout(pv[i], i, color, use_tt);
+        value = color * scout(pv[i], i + 1, color, use_tt);
       } else if (algorithm == 4) {
-        value = negascout(pv[i], i, -200, 200, color, use_tt);
+        value = negascout(pv[i], i + 1, -200, 200, color, use_tt);
       }
     } catch (const bad_alloc &e) {
       cout << "size TT[0]: size=" << TTable[0].size()

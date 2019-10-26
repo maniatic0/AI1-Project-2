@@ -95,9 +95,9 @@ int negamax(state_t state, int depth, int alpha, int beta, int color, bool use_t
 bool test(state_t state, int depth, int score, bool condition, int color) {
   if (depth <= 0 || state.terminal()) {
     if (condition){
-      return state.value() > score ? true : false;
+      return state.value() > score;
     } else {
-      return state.value() >= score ? true : false;
+      return state.value() >= score;
     }
   }
   
@@ -107,14 +107,16 @@ bool test(state_t state, int depth, int score, bool condition, int color) {
   for (int pos = 4; pos < DIM; ++pos) {
     if ((isBlack && state.is_black_move(pos)) || (!isBlack && state.is_white_move(pos))) {
       pass = false;
-      if (isBlack && test(state.move(isBlack, pos), depth - 1, score, condition, -color)) return true;
-      if (!isBlack && !test(state.move(isBlack, pos), depth - 1, score, condition, -color)) return false;
+      state_t child = state.move(isBlack, pos);
+      if (isBlack && test(child, depth - 1, score, condition, -color)) return true;
+      if (!isBlack && !test(child, depth - 1, score, condition, -color)) return false;
     }
   }
 
   if (pass) {
-    if (isBlack && test(state.move(isBlack, DIM), depth - 1, score, condition, -color)) return true;
-    if (!isBlack && !test(state.move(isBlack, DIM), depth - 1, score, condition, -color)) return false;
+    state_t child = state.move(isBlack, DIM);
+    if (isBlack && test(child, depth - 1, score, condition, -color)) return true;
+    if (!isBlack && !test(child, depth - 1, score, condition, -color)) return false;
   }
 
   return !isBlack;
@@ -130,18 +132,19 @@ int scout(state_t state, int depth, int color, bool use_tt = false) {
   int score = 0;
   for (int pos = 4; pos < DIM; ++pos) {
     if ((isBlack && state.is_black_move(pos)) || (!isBlack && state.is_white_move(pos))) {
+      state_t child = state.move(isBlack, pos);
       if (firstChild) {
         firstChild = false;
         ++expanded;
-        score = scout(state.move(isBlack, pos), depth - 1, -color, use_tt);
+        score = scout(child, depth - 1, -color, use_tt);
       } else {
-        if (isBlack && test(state.move(isBlack, pos), depth - 1, score, true, -color)) {
+        if (isBlack && test(child, depth - 1, score, true, -color)) {
           ++expanded;
-          score = scout(state.move(isBlack, pos), depth - 1, -color, use_tt);
+          score = scout(child, depth - 1, -color, use_tt);
         }
-        if (!isBlack && !test(state.move(isBlack, pos), depth - 1, score, false, -color)) {
+        if (!isBlack && !test(child, depth - 1, score, false, -color)) {
           ++expanded;
-          score = scout(state.move(isBlack, pos), depth - 1, -color, use_tt);
+          score = scout(child, depth - 1, -color, use_tt);
         }
       }
       pass = false;
@@ -150,22 +153,10 @@ int scout(state_t state, int depth, int color, bool use_tt = false) {
   }
 
   if (pass) {
-    if (firstChild) {
-      firstChild = false;
-      ++expanded;
-      score = scout(state.move(isBlack, DIM), depth - 1, -color, use_tt);
-    } else {
-      if (isBlack && test(state.move(isBlack, DIM), depth - 1, score, true, -color)) {
-        ++expanded;
-        score = scout(state.move(isBlack, DIM), depth - 1, -color, use_tt);
-      }
-      if (!isBlack && !test(state.move(isBlack, DIM), depth - 1, score, false, -color)) {
-        ++expanded;
-        score = scout(state.move(isBlack, DIM), depth - 1, -color, use_tt);
-      }
-    }
+    score = scout(state.move(isBlack, DIM), depth - 1, -color, use_tt);
+    ++expanded;
     ++generated;
-    }
+  }
   return score;
 }
 
@@ -228,11 +219,11 @@ int main(int argc, const char **argv) {
 
     try {
       if (algorithm == 1) {
-        value = negamax(pv[i], i + 1, color, use_tt);
+        value = negamax(pv[i], i, color, use_tt);
       } else if (algorithm == 2) {
-        value = negamax(pv[i], i + 1, -200, 200, color, use_tt);
+        value = negamax(pv[i], i, -200, 200, color, use_tt);
       } else if (algorithm == 3) {
-        value = scout(pv[i], i + 1, color, use_tt);
+        value = scout(pv[i], i, color, use_tt);
       } else if (algorithm == 4) {
         // value = negascout(pv[i], 0, -200, 200, color, use_tt);
       }

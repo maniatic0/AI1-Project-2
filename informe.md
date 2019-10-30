@@ -13,6 +13,14 @@ Para la iteración sobre los hijos de un tablero, decidimos hacer los ciclos exp
 
 ## Resultados
 
+Se ejecutaron los algoritmos con un timeout de 15 minutos debido a limitaciones con el tiempo de computo. No se esperaba que estos pudiesen terminar de correr en un corto plazo, sin embargo a los 15 minutos se puede analizar cuales algoritmos lograron alcanzar la mayor cantidad de jugadas.
+
+### Como ejecutar los algoritmos:
+
+1. Situarse en la carpeta principal del proyecto
+2. `make`
+3. `./<numero respectivo del algoritmo>`
+
 ### Negamax (minmax)
 
 Extracting principal variation (PV) with 33 plays ... done!
@@ -121,3 +129,5 @@ Moving along PV:
 | 14 | White | -4 |61505888 | 61505888 |  26.496 | 2.32133e+06 |
 | 13 | Black | -4 |240389629 | 240389629 |  98.7573 | 2.43414e+06 |
 | 12 | White | -4 |622049286 | 622049286 |  259.743 | 2.39486e+06 |
+
+Se puede concluir que el mejor algoritmo para realizar la busqueda sobre el arbol correspondiente al juego Othello es Negascout, como se puede observar es el que llego a la mayor profundidad en menor tiempo: 259.743 segundos, comparado a Scout que tambien llego a la jugada 12, no obstante en 303.67 segundos. 

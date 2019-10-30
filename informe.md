@@ -102,6 +102,8 @@ Moving along PV:
 | 13 | Black | -4 |280257 | 399568 |  112.153 | 3562.69 |
 | 12 | White | -4 |952914 | 1335978 |  303.67 | 4399.45 |
 
+Es relevante mencionar la diferencia entre los nodos expandidos y generados. En Scout se hace pruning usando test, por lo tanto no se expande todo lo generado.
+
 ### Negascout
 
 | Play | Moves: | Value |     Expanded     |     Generated     |     Seconds    | Generated/second        |
